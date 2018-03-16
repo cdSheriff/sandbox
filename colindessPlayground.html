@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title></title>
+	<script type = "text/javascript"
+         src = "https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js">
+      </script>
+		
+    <script type = "text/javascript" 
+         src = "https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.3/jquery-ui.min.js">
+      </script>
+    <style type="text/css">
+    	html, body {
+		    height: 100%;
+		    width: 100%;
+		    margin: 0;
+		    font-family: helvetica, courier new;
+		    font-size: 16px;
+		    font-weight: bold;
+		}
+		th {
+			font-variant-caps: small-caps;
+			font-size: 30px;
+			text-align: left;
+			
+		}
+		table {
+			width:400px;
+			padding-left: 20px;
+			/*background-color: red;*/
+		}
+    </style>
+    <script type="text/javascript">
+    	function pracThis () {
+    		this.a = 2
+    		console.log(a)
+    	}
+    	function chains() {
+    		$.getJSON('https://allorigins.me/get?url=' + encodeURIComponent('http://www.dot.ca.gov/hq/roadinfo/display.php?page=i80') + '&callback=?', function(data){
+    			let i80 = data.contents.split('pre>')[1].split("\n")
+			    console.log(i80);
+			});
+    	}
+
+    	function xmlToJson(xml) {
+	
+			// Create the return object
+			var obj = {};
+
+			if (xml.nodeType == 1) { // element
+				// do attributes
+				if (xml.attributes.length > 0) {
+				obj["@attributes"] = {};
+					for (var j = 0; j < xml.attributes.length; j++) {
+						var attribute = xml.attributes.item(j);
+						obj["@attributes"][attribute.nodeName] = attribute.nodeValue;
+					}
+				}
+			} else if (xml.nodeType == 3) { // text
+				obj = xml.nodeValue;
+			}
+
+			// do children
+			if (xml.hasChildNodes()) {
+				for(var i = 0; i < xml.childNodes.length; i++) {
+					var item = xml.childNodes.item(i);
+					var nodeName = item.nodeName;
+					if (typeof(obj[nodeName]) == "undefined") {
+						obj[nodeName] = xmlToJson(item);
+					} else {
+						if (typeof(obj[nodeName].push) == "undefined") {
+							var old = obj[nodeName];
+							obj[nodeName] = [];
+							obj[nodeName].push(old);
+						}
+						obj[nodeName].push(xmlToJson(item));
+					}
+				}
+			}
+			return obj;
+		};
+
+		// function myDinner( param1, param2, callbackFunction ) {
+		//  alert( 'Started eating my dinner. \n\n It has: ' + param1 + ', ' + param2); 
+		//  callbackFunction (); 
+		// } 
+
+		// myDinner ( 'Rice', 'Curry', function() { 
+		// 	alert( 'Finished eating my dinner.' ); 
+		// });
+
+		// function firstFunction(_callback){
+		//     // do some asynchronous work
+		//     // and when the asynchronous stuff is complete
+		//     _callback();    
+		// }
+
+		// function secondFunction(){
+		//     // call first function and pass in a callback function which
+		//     // first function runs when it has completed
+		//     firstFunction(function() {
+		//         console.log('huzzah, I\'m done!');
+		//     });    
+		// }
+
+		function fillTable() {
+			let places = ['pluto', 'martis', 'mid', 'rose','heaven','kirk']
+			places.forEach(function(eachName, index){
+				quickSnow(eachName)
+				// let snowfall = quickSnow(eachName)
+				// document.getElementById(eachName + 12).innerHTML = snowfall.slice(0,13).reduce(function(a, b) { return a + b; }, 0).toFixed(1),
+			 //    document.getElementById(eachName + 24).innerHTML = snowfall.slice(0,25).reduce(function(a, b) { return a + b; }, 0).toFixed(1),
+			 //    document.getElementById(eachName + 72).innerHTML = snowfall.slice(0,73).reduce(function(a, b) { return a + b; }, 0).toFixed(1),
+			 //    document.getElementById(eachName + 168).innerHTML = snowfall.slice(0,168).reduce(function(a, b) { return a + b; }, 0).toFixed(1)
+			    
+			});
+
+
+			// for (let i = 0; i < places.length; i++) {
+			// 	let temp = [places[i] + 12, places[i] + 24, places[i] + 72, places[i] + 168]
+			// 	let snowfall = quickSnow(places[i])
+			// 	// let temp = [places[i] + 12, places[i] + 24, places[i] + 72, places[i] + 168]
+			// 	document.getElementById(temp[0]).innerHTML = snowfall.slice(0,13).reduce(function(a, b) { return a + b; }, 0).toFixed(1);
+			//     document.getElementById(temp[1]).innerHTML = snowfall.slice(0,25).reduce(function(a, b) { return a + b; }, 0).toFixed(1);
+			//     document.getElementById(temp[2]).innerHTML = snowfall.slice(0,73).reduce(function(a, b) { return a + b; }, 0).toFixed(1);
+			//     document.getElementById(temp[3]).innerHTML = snowfall.slice(0,168).reduce(function(a, b) { return a + b; }, 0).toFixed(1);
+
+			// }
+		}
+
+		function quickSnow(loc) {
+			locations = {
+				pluto:'lat=39.25&lon=-120.15',
+				martis:'lat=39.27&lon=-120.16',
+				mid:'lat=39.25&lon=-120.12',
+				rose:'lat=39.31&lon=-119.88',
+				heaven:'lat=38.93&lon=-119.9',
+				kirk:'lat=38.68&lon=-120.07',
+			};
+			console.log(locations[loc])
+			let url = 'https://forecast.weather.gov/MapClick.php?' + locations[loc] + '&FcstType=digitalDWML'
+			$.get(url, function(response){
+				let forecast = xmlToJson(response).dwml.data;
+				console.log(forecast)
+				let snowfall = [];
+				let rainDays = [];
+				let halfRain = [];
+				for (let i=0; i < forecast.parameters.weather['weather-conditions'].length; i++) {
+					if (JSON.stringify(forecast.parameters.weather['weather-conditions'][i]).includes('snow')) {
+						// console.log(rawWeather[i])
+						snowfall.push(poopSnow(forecast,i))
+						// console.log(poopSnow(forecast,i) + forecast.parameters['hourly-qpf'].value[i]['#text'])
+						
+					}
+					let houring = forecast['time-layout']['start-valid-time'][i]['#text'].split('T')[1].slice(0,2)
+					if (houring[0] == 0) {
+						houring = parseInt(houring.substring(1))
+					} else {
+						houring = parseInt(houring)
+					}
+					// console.log(houring)
+					if (8 < houring && houring < 17 && JSON.stringify(forecast.parameters.weather['weather-conditions'][i]).includes('rain')) {
+						console.log(houring)
+						// console.log(rainDay(forecast,i))
+						// console.log(forecast.parameters['hourly-qpf'].value[i]['#text'])
+						if (halfRain.includes(rainDay(forecast,i)) == false) {
+							rainDays.push(rainDay(forecast,i) + ':' + forecast.parameters['probability-of-precipitation'].value[i]['#text'])
+							halfRain.push(rainDay(forecast,i))
+						} else if (rainDays[halfRain.indexOf(rainDay(forecast,i))].split(':')[1] < forecast.parameters['probability-of-precipitation'].value[i]['#text']) {
+							rainDays.pop()
+							rainDays.push(rainDay(forecast,i) + ':' + forecast.parameters['probability-of-precipitation'].value[i]['#text'])
+						}
+					}
+				}
+				// console.log(rainDays)
+				// console.log(snowfall)
+				// console.log(rainDays)
+				let rain = '';
+				for (let j = 0; j < rainDays.length;j++) {
+					rain += ' ' + rainDays[j] + '%'
+				}
+				// console.log(rain)
+			weatherFill(loc,snowfall,rain)
+			});
+		}
+
+		function poopSnow(forecast,i) {
+			let tempChart = {10:[28,34], 15:[20,27], 20:[15,19], 30:[10,14], 40:[0,9], 50:[-20,-1], 100:[-40,-21]};
+			let snow
+			if (forecast.parameters['hourly-qpf'].value[i]['#text'] == undefined) {
+				// console.log('empty block')
+				snow = 0
+			} else if (forecast.parameters.temperature[2].value[i]['#text'] >= tempChart[Object.keys(tempChart)[0]][1]) {
+				snow = forecast.parameters['hourly-qpf'].value[i]['#text'] * Object.keys(tempChart)[0]
+				// console.log('over')
+			} else if (forecast.parameters.temperature[2].value[i]['#text'] <= tempChart[Object.keys(tempChart).slice(-1)[0]][0]) {
+				snow = forecast.parameters['hourly-qpf'].value[i]['#text'] * Object.keys(tempChart)[-1]
+			} else {
+				for (let j = 0; j < Object.keys(tempChart).length; j++) {
+					if (forecast.parameters.temperature[2].value[i]['#text'] >= tempChart[Object.keys(tempChart)[j]][0] && forecast.parameters.temperature[2].value[i]['#text'] <= tempChart[Object.keys(tempChart)[j]][1]) {
+						snow = forecast.parameters['hourly-qpf'].value[i]['#text'] * Object.keys(tempChart)[j]
+					}
+				}
+			}
+			return snow;
+		}
+
+		function weatherFill(loc,snowfall,rain) {
+			document.getElementById(loc + 12).innerHTML = snowfall.slice(0,13).reduce(function(a, b) { return a + b; }, 0).toFixed(1)
+		    document.getElementById(loc + 24).innerHTML = snowfall.slice(0,25).reduce(function(a, b) { return a + b; }, 0).toFixed(1)
+		    document.getElementById(loc + 72).innerHTML = snowfall.slice(0,73).reduce(function(a, b) { return a + b; }, 0).toFixed(1)
+		    document.getElementById(loc + 168).innerHTML = snowfall.slice(0,168).reduce(function(a, b) { return a + b; }, 0).toFixed(1)
+		    document.getElementById(loc + 'rain').innerHTML = rain
+		    if (rain.length > 0) {
+		    	document.getElementById(loc + 'yes').innerHTML = 'yes'
+		    	document.getElementById(loc + 'yes').style.backgroundColor = '#ff3300'
+		    } else {
+		    	document.getElementById(loc + 'yes').innerHTML = 'no'
+		    	document.getElementById(loc + 'yes').style.backgroundColor = '#66ff66'
+		    }
+		}
+
+		function rainDay(forecast,i) {
+			let daysOfWeek = ['Sun','Mon','Tue','Wed','Thur','Fri','Sat']
+			let rainTime = forecast['time-layout']['start-valid-time'][i]['#text'].split('T')[0]
+			let d = new Date(rainTime)
+			return daysOfWeek[d.getDay()]
+		}
+
+		function dayTest() {
+			let d = new Date('2018-03-05')
+			console.log(d.getDay())
+		}
+
+		function indexTest() {
+			var beasts = ['ant', 'bison', 'camel', 'duck', 'bison'];
+			console.log(beasts.indexOf('biso'))
+		}
+    </script>
+</head>
+<body onload="fillTable()">
+	<!-- <div id='chains'></div> -->
+	<table>
+		<th  colspan = "3">
+			summmit lodge and backside
+		</th>
+		<tr>
+			<td>forecast at 7198 feet, summit at 8610 feet</td>
+		</tr>
+		<tr>
+			<td>12 hour snow forecast:</td>
+			<td id = "pluto12"></td>
+		</tr>
+		<tr>
+			<td>24 hour snow forecast:</td>
+			<td id = "pluto24"></td>
+		</tr>
+		<tr>
+			<td>3 day snow forecast:</td>
+			<td id = "pluto72"></td>
+		</tr>
+		<tr>
+			<td>weeklong snow forecast:</td>
+			<td id = "pluto168"></td>
+		</tr>
+		<tr>
+			<td>rain forecasted:</td>
+			<td id="plutoyes"></td>
+		</tr>
+		<tr>
+			<td id = "plutorain" colspan = "3"></td>
+		</tr>
+	</table>
+	<table style="padding-top: 20px">
+		<tr>
+			<th  colspan = "3">lookout, martis chair</th>
+		</tr>
+		<tr>
+			<td>forecast at 6781 feet, summit at 8120 feet</td>
+		</tr>
+		<tr>
+			<td>12 hour snow forecast:</td>
+			<td id = "martis12"></td>
+		</tr>
+		<tr>
+			<td>24 hour snow forecast:</td>
+			<td id = "martis24"></td>
+		</tr>
+		<tr>
+			<td>3 day snow forecast:</td>
+			<td id = "martis72"></td>
+		</tr>
+		<tr>
+			<td>weeklong snow forecast:</td>
+			<td id = "martis168"></td>
+		</tr>
+		<tr>
+			<td>rain forecasted:</td>
+			<td id="martisyes"></td>
+		</tr>
+		<tr>
+			<td id = "martisrain"  colspan = "3"></td>
+		</tr>
+	</table>
+	<table style="padding-top: 20px">
+		<tr>
+			<th  colspan = "3">mid mountain and east ridge</th>
+		</tr>
+		<tr>
+			<td>forecast at 7598 feet, summit at ~ 8200 feet</td>
+		</tr>
+		<tr style="border-bottom: 1px solid black">
+			<td>12 hour snow forecast:</td>
+			<td id = "mid12"></td>
+		</tr>
+		<tr>
+			<td>24 hour snow forecast:</td>
+			<td id = "mid24"></td>
+		</tr>
+		<tr>
+			<td>3 day snow forecast:</td>
+			<td id = "mid72"></td>
+		</tr>
+		<tr>
+			<td>weeklong snow forecast:</td>
+			<td id = "mid168"></td>
+		</tr>
+		<tr>
+			<td>rain forecasted:</td>
+			<td id="midyes"></td>
+		</tr>
+		<tr>
+			<td id = "midrain"  colspan = "3"></td>
+		</tr>
+	</table>
+	<table style="padding-top: 20px">
+		<tr>
+			<th  colspan = "3">Mt. Rose reno side, chutes</th>
+		</tr>
+		<tr>
+			<td>forecast at 9416 feet, summit at 9702 feet</td>
+		</tr>
+		<tr>
+			<td>12 hour snow forecast:</td>
+			<td id = "rose12"></td>
+		</tr>
+		<tr>
+			<td>24 hour snow forecast:</td>
+			<td id = "rose24"></td>
+		</tr>
+		<tr>
+			<td>3 day snow forecast:</td>
+			<td id = "rose72"></td>
+		</tr>
+		<tr>
+			<td>weeklong snow forecast:</td>
+			<td id = "rose168"></td>
+		</tr>
+		<tr>
+			<td>rain forecasted:</td>
+			<td id="roseyes"></td>
+		</tr>
+		<tr>
+			<td id = "roserain"  colspan = "3"></td>
+		</tr>
+	</table>
+	<table style="padding-top: 20px">
+		<tr>
+			<th  colspan = "3">Heavenly Nevada side</th>
+		</tr>
+		<tr>
+			<td>forecast at 9193 feet, summit at ~ 9800 feet</td>
+		</tr>
+		<tr>
+			<td>12 hour snow forecast:</td>
+			<td id = "heaven12"></td>
+		</tr>
+		<tr>
+			<td>24 hour snow forecast:</td>
+			<td id = "heaven24"></td>
+		</tr>
+		<tr>
+			<td>3 day snow forecast:</td>
+			<td id = "heaven72"></td>
+		</tr>
+		<tr>
+			<td>weeklong snow forecast:</td>
+			<td id = "heaven168"></td>
+		</tr>
+		<tr>
+			<td>rain forecasted:</td>
+			<td id="heavenyes"></td>
+		</tr>
+		<tr>
+			<td id = "heavenrain"  colspan = "3"></td>
+		</tr>
+	</table>
+	<table style="padding-top: 20px">
+		<tr>
+			<th  colspan = "3">Kirkwood wagonwheel bowl</th>
+		</tr>
+		<tr>
+			<td>forecast at 8268 feet, summit at ~ 9400 feet</td>
+		</tr>
+		<tr>
+			<td>12 hour snow forecast:</td>
+			<td id = "kirk12"></td>
+		</tr>
+		<tr>
+			<td>24 hour snow forecast:</td>
+			<td id = "kirk24"></td>
+		</tr>
+		<tr>
+			<td>3 day snow forecast:</td>
+			<td id = "kirk72"></td>
+		</tr>
+		<tr>
+			<td>weeklong snow forecast:</td>
+			<td id = "kirk168"></td>
+		</tr>
+		<tr>
+			<td>rain forecasted:</td>
+			<td id="kirkyes"></td>
+		</tr>
+		<tr>
+			<td id = "kirkrain"  colspan = "3"></td>
+		</tr>
+	</table>
+<!-- 	<div id = >
+		
+	</div> -->
+</body>
+</html>
+
+<!-- http://forecast.weather.gov/MapClick.php?w0=t&w1=td&w2=wc&w3=sfcwind&w4=sky&w5=pop&w6=rh&w7=rain&w8=thunder&w9=snow&w10=fzg&w11=sleet&AheadHour=48&&FcstType=digital&textField1=39.2415&textField2=-120.139&site=all -->
+<!-- https://forecast.weather.gov/MapClick.php?lat=39.2415&lon=-120.139&FcstType=digitalDWML -->
