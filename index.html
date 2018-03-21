@@ -52,12 +52,11 @@
 			let closure = /SIERRA NEVADA]\\r\\n(\s+?)(?=IS CLOSED)/
     			console.log(noChains.exec(i80));
 			    console.log(i80);
-			    if (noChains.exec(i80)) {
-			    	console.log('no chains!')
+			    if (noChains.test(i80)) {
 			    	document.getElementById('chains').innerHTML = 'No chain control identified'
-			    } else if (FWD.exec(i80) || yesChains.exec(i80)){
+			    } else if (FWD.test(i80) || yesChains.test(i80)){
 			    	document.getElementById('chains').innerHTML = 'Pack those puppies!'
-			    } else if (closure.exec(i80)){
+			    } else if (closure.test(i80)){
 			    	document.getElementById('chains').innerHTML = 'Highway is DED'
 			    } else {
 			    	document.getElementById('chains').innerHTML = "Shit's broke..."
