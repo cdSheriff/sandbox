@@ -49,6 +49,7 @@
     			let noChains = /SIERRA NEVADA]\\r\\n(\s+?)(?=NO TRAFFIC)/
     			let FWD = /SIERRA NEVADA]\\r\\n(\s+?)(?=4-WHEEL-DRIVE)/
     			let yesChains = /SIERRA NEVADA]\\r\\n(\s+?)(?=CHAINS)/
+			let closure = /SIERRA NEVADA]\\r\\n(\s+?)(?=IS CLOSED)/
     			console.log(noChains.exec(i80));
 			    console.log(i80);
 			    if (noChains.exec(i80)) {
@@ -56,6 +57,8 @@
 			    	document.getElementById('chains').innerHTML = 'No chain control identified'
 			    } else if (FWD.exec(i80) || yesChains.exec(i80)){
 			    	document.getElementById('chains').innerHTML = 'Pack those puppies!'
+			    } else if (closure.exec(i80)){
+			    	document.getElementById('chains').innerHTML = 'Highway is DED'
 			    } else {
 			    	document.getElementById('chains').innerHTML = "Shit's broke..."
 			    }
