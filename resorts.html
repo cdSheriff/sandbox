@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title></title>
+	<script type = "text/javascript"
+         src = "https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js">
+      </script>
+		
+    <script type = "text/javascript" 
+         src = "https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.3/jquery-ui.min.js">
+      </script>
+    <style type="text/css">
+    	html, body {
+		    height: 100%;
+		    width: 100%;
+		    margin: 0;
+		    font-family: helvetica, courier new;
+		    font-size: 16px;
+		    font-weight: bold;
+		}
+		th {
+			font-variant-caps: small-caps;
+			font-size: 30px;
+			text-align: left;
+			
+		}
+		table {
+			width:400px;
+			padding-left: 20px;
+		}
+    </style>
+    <script src="resorts.js"></script>
+    <script type="text/javascript">
+    	function xmlToJson(xml) {
+	
+			// Create the return object
+			var obj = {};
+
+			if (xml.nodeType == 1) { // element
+				// do attributes
+				if (xml.attributes.length > 0) {
+				obj["@attributes"] = {};
+					for (var j = 0; j < xml.attributes.length; j++) {
+						var attribute = xml.attributes.item(j);
+						obj["@attributes"][attribute.nodeName] = attribute.nodeValue;
+					}
+				}
+			} else if (xml.nodeType == 3) { // text
+				obj = xml.nodeValue;
+			}
+
+			// do children
+			if (xml.hasChildNodes()) {
+				for(var i = 0; i < xml.childNodes.length; i++) {
+					var item = xml.childNodes.item(i);
+					var nodeName = item.nodeName;
+					if (typeof(obj[nodeName]) == "undefined") {
+						obj[nodeName] = xmlToJson(item);
+					} else {
+						if (typeof(obj[nodeName].push) == "undefined") {
+							var old = obj[nodeName];
+							obj[nodeName] = [];
+							obj[nodeName].push(old);
+						}
+						obj[nodeName].push(xmlToJson(item));
+					}
+				}
+			}
+			return obj;
+		};
+
+		function quickSnow(hours, loc, label, callback) {
+			let url = 'https://forecast.weather.gov/MapClick.php?' + loc + '&FcstType=digitalDWML'
+			// console.log(url)
+			var outputting
+			$.get(url, function(response){
+				let forecast = xmlToJson(response).dwml.data;
+				let snowfall = [];
+				let rainDays = [];
+				let halfRain = [];
+
+				for (let i=0; i < forecast.parameters.weather['weather-conditions'].length; i++) {
+					if (JSON.stringify(forecast.parameters.weather['weather-conditions'][i]).includes('snow')) {
+						snowfall.push(poopSnow(forecast,i))
+						
+					}
+					let houring = forecast['time-layout']['start-valid-time'][i]['#text'].split('T')[1].slice(0,2)
+					if (houring[0] == 0) {
+						houring = parseInt(houring.substring(1))
+					} else {
+						houring = parseInt(houring)
+					}
+					
+				}
+
+				let rain = '';
+				for (let j = 0; j < rainDays.length;j++) {
+					rain += ' ' + rainDays[j] + '%'
+				}
+			outputting = weatherFill(hours,loc,snowfall,rain)
+			outputting.push(forecast.location.height['#text'])
+			outputting.push(label)
+			callback(outputting)
+			// console.log(outputting)
+			});
+		}
+
+		function poopSnow(forecast,i) {
+			let tempChart = {10:[28,34], 15:[20,27], 20:[15,19], 30:[10,14], 40:[0,9], 50:[-20,-1], 100:[-40,-21]};
+			let snow
+			if (forecast.parameters['hourly-qpf'].value[i]['#text'] == undefined) {
+				// console.log('empty block')
+				snow = 0
+			} else if (forecast.parameters.temperature[2].value[i]['#text'] >= tempChart[Object.keys(tempChart)[0]][1]) {
+				snow = forecast.parameters['hourly-qpf'].value[i]['#text'] * Object.keys(tempChart)[0]
+				// console.log('over')
+			} else if (forecast.parameters.temperature[2].value[i]['#text'] <= tempChart[Object.keys(tempChart).slice(-1)[0]][0]) {
+				snow = forecast.parameters['hourly-qpf'].value[i]['#text'] * Object.keys(tempChart)[-1]
+			} else {
+				for (let j = 0; j < Object.keys(tempChart).length; j++) {
+					if (forecast.parameters.temperature[2].value[i]['#text'] >= tempChart[Object.keys(tempChart)[j]][0] && forecast.parameters.temperature[2].value[i]['#text'] <= tempChart[Object.keys(tempChart)[j]][1]) {
+						snow = forecast.parameters['hourly-qpf'].value[i]['#text'] * Object.keys(tempChart)[j]
+					}
+				}
+			}
+			if (snow == undefined) {
+				snow = 0
+			}
+			return snow;
+		}
+
+		function weatherFill(hours,loc,snowfall,rain) {
+			let snow = []
+			for (let i = 0; i < hours.length; i++) {
+				snow.push(snowfall.slice(0, hours[i] + 1).reduce(function(a, b) {return a + b; }, 0).toFixed(1))
+			}
+			// document.getElementById(loc + 'altitude').innerHTML = `forecast at ${height} feet`
+			// document.getElementById(loc + 12).innerHTML = snowfall.slice(0,13).reduce(function(a, b) { return a + b; }, 0).toFixed(1)
+		 //    document.getElementById(loc + 24).innerHTML = snowfall.slice(0,25).reduce(function(a, b) { return a + b; }, 0).toFixed(1)
+		 //    document.getElementById(loc + 72).innerHTML = snowfall.slice(0,73).reduce(function(a, b) { return a + b; }, 0).toFixed(1)
+		 //    document.getElementById(loc + 168).innerHTML = snowfall.slice(0,168).reduce(function(a, b) { return a + b; }, 0).toFixed(1)
+		 //    document.getElementById(loc + 'rain').innerHTML = rain
+		 //    if (rain.length > 0) {
+		 //    	document.getElementById(loc + 'yes').innerHTML = 'yes'
+		 //    	document.getElementById(loc + 'yes').style.backgroundColor = '#ff3300'
+		 //    } else {
+		 //    	document.getElementById(loc + 'yes').innerHTML = 'no'
+		 //    	document.getElementById(loc + 'yes').style.backgroundColor = '#66ff66'
+		 //    }
+		 return [snow]
+		}
+
+
+		///////////////// NEW STUFF ////////////////////
+		function hidePopup() {
+			document.getElementById("data" + this.id[this.id.length - 1]).style.display = "none"
+			this.style.zIndex = 2
+
+		}
+
+		function showPopup() {
+			document.getElementById("data" + this.id[this.id.length - 1]).style.display = "block"
+			this.style.zIndex = 4
+		}
+
+    	function placeMarker(resort) {
+    		console.log(resorts[resort])
+
+    		var image = document.getElementById("map");
+			image.src = resorts[resort].map; 
+
+    		for (let i=0; i < resorts[resort].forecasts; i++) {
+
+    			var locicon = document.createElement("img")
+    			locicon.src = "locicon.png"
+    			locicon.style.width = "6%"
+    			locicon.style.zIndex = 2
+    			locicon.style.position = "absolute"
+    			locicon.id = "marker" + i
+    			locicon.style.top = (resorts[resort].locs[i][0] - 9) + '%' // why TF is it 9??? shouldnt it be 6?? seems like the alpha background means it trims for width/height shit in here
+    			locicon.style.left = (resorts[resort].locs[i][1] - 3) + '%'
+    			locicon.addEventListener("mouseenter", showPopup)
+    			locicon.addEventListener("mouseleave", hidePopup)
+
+    			document.getElementById("mapContain").appendChild(locicon)
+
+
+    			var popup = document.createElement("div")
+
+    			
+    			popup.style.width = "40%"
+    			popup.style.height = "40%"
+    			popup.style.background = "white"
+    			console.log(document.documentElement.clientWidth) 
+    			popup.style.opacity = 0.8
+    			popup.style.zIndex = 3
+    			popup.style.borderRadius = "10px"
+    			popup.id = "data" + i
+    			popup.style.display = "none"   		
+				if (document.documentElement.clientWidth < 500) {
+					popup.style.position = "relative"
+					popup.style.left = 0
+					popup.style.top = 0
+					popup.style.background = "none"
+					popup.style.width = "100%"
+					document.getElementById("mediaContain").appendChild(popup)
+				} else {
+	    			popup.style.position = "absolute"
+	    			if (resorts[resort].locs[i][0] <= 50) {
+		    			popup.style.top = resorts[resort].locs[i][0] + '%'
+	    			} else {
+	    				popup.style.bottom = (100 - resorts[resort].locs[i][0]) + '%'
+	    			}
+	    			if (resorts[resort].locs[i][1] <= 50) {
+		    			popup.style.left = resorts[resort].locs[i][1] + '%'
+	    			} else {
+	    				popup.style.right = (100 - resorts[resort].locs[i][1]) + '%'
+	    			}
+	    			document.getElementById("mapContain").appendChild(popup)
+	    		}
+	   			// popup.style.position = "relative"
+    			
+    			// if (resorts[resort].locs[i][0] <= 50) {
+	    		// 	popup.style.top = resorts[resort].locs[i][0] + '%'
+
+    			// } else {
+    			// 	popup.style.bottom = (100 - resorts[resort].locs[i][0]) + '%'
+    			// }
+    			// if (resorts[resort].locs[i][1] <= 50) {
+	    		// 	popup.style.left = resorts[resort].locs[i][1] + '%'
+
+    			// } else {
+    			// 	popup.style.right = (100 - resorts[resort].locs[i][1]) + '%'
+    			// }
+
+    			
+
+
+    			
+    			// title.innerHTML = `forecast at ${height} feet`
+    			quickSnow([24,72,168], 'lat=' + resorts[resort].locs[i][2] + '&lon=' + resorts[resort].locs[i][3], resorts[resort].locs[i][4], function(dataToFill) {
+    				console.log(i)
+    				var title = document.createElement("h2")
+    				document.getElementById("data" + i).appendChild(title) 
+    				title.innerHTML = `Snow forecast for ${dataToFill[2]}: 
+    				<br> forecast at ${dataToFill[1]} feet
+    				<br>
+    				<br> 24 hour forecast: ${dataToFill[0][0]} feet
+    				<br> 3 day forecast: ${dataToFill[0][1]} feet
+    				<br> 7 day forecast: ${dataToFill[0][2]} feet`
+	    			title.style.margin = "10%"
+    			// quickSnow(12, 'lat=' + resorts[resort].locs[i][2] + '&lon=' + resorts[resort].locs[i][3],function(dataToFill) {})
+	    			console.log("data" + i)
+	    			
+	    		})
+    			// title.innerHTML = `Snow outlook for ${resort}: 
+    			// 	<br> forecast at blah blah feet
+    			// 	<br>
+    			// 	<br> `
+
+    		
+    		}
+    		           
+    	}
+    </script>
+</head>
+<body onload = "placeMarker('northstar')">
+	<div  style="width: 100%; position: relative;" id = "mapContain">
+		<img src="" style="width:100%; z-index:0; position: relative; top:0; left:0;" id = "map">
+	</div>
+	<div style="width: 100%; position: relative;" id = "mediaContain">
+	</div>
+	<!-- <img src="https://assets.vailresorts.com/-/media/northstar/products/brochure/the-mountain/about-the-mountain/trail-map/winter_trail_mapside_201819_no_bleed.pdf"> -->
+</body>
+</html>
